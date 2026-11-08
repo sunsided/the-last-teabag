@@ -1,0 +1,8 @@
+name: Uncle Otto
+aliases: [otto, uncle]
+proper: true
+location: { room: bedroom }
+presence:
+  - "Uncle Otto is here, patting his pockets."
+description:
+  - "{specs.location == nowhere ? Spectacles on, and pleased with the world. | He squints at you as if you were a distant hill.}"

@@ -1,0 +1,28 @@
+version: '3'
+
+vars:
+  LOREMASTER: cargo run -q -p loremaster --no-default-features --
+
+tasks:
+  run:
+    desc: Play the game
+    cmds:
+      - cargo run
+
+  test:
+    desc: Run the host tests and the story checks
+    deps: [story:check, story:test]
+    cmds:
+      - cargo test
+
+  story:check:
+    desc: Check the story with loremaster
+    dir: ../loremaster
+    cmds:
+      - '{{.LOREMASTER}} check ../lcp/story'
+
+  story:test:
+    desc: Run the story walkthroughs
+    dir: ../loremaster
+    cmds:
+      - '{{.LOREMASTER}} test ../lcp/story'

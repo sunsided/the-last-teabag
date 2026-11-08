@@ -1,0 +1,16 @@
+name: Suggested actions work on their own
+steps:
+  - take spectacles
+  - give spectacles to otto
+  - e
+  - { do: use tap, see: "nothing to catch" }
+  - d
+  - take kettle
+  - { do: inventory, see: "empty kettle" }
+  - u
+  - { do: use tap, see: "fill the kettle" }
+  - d
+  - { do: use stove, see: "starts to sing" }
+  - d
+  - { do: open chest, see: "padlock gives up" }
+  - { do: inventory, see: "filled kettle" }

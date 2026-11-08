@@ -1,0 +1,8 @@
+name: tea chest
+aliases: [chest]
+location: { room: cellar }
+listed: false
+container: true
+props: { open: false, unlocked: false }
+description:
+  - "{chest.unlocked ? Open, and nearly empty. | Padlocked. Otto keeps the key about his person.}"

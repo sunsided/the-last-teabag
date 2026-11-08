@@ -1,0 +1,6 @@
+name: spectacles
+aliases: [glasses, specs]
+location: { room: bedroom }
+portable: true
+description:
+  - "Otto's. One arm is mended with fuse wire."

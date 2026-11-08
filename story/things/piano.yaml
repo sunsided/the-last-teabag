@@ -1,0 +1,5 @@
+name: piano
+location: { room: attic }
+listed: false
+description:
+  - "{piano_playing ? Otto is committing an offence against Schubert. | Three keys stick.}"

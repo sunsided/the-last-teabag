@@ -1,0 +1,20 @@
+name: Shared tea
+steps:
+  - take spectacles
+  - give spectacles to otto
+  - e
+  - d
+  - take kettle
+  - take mug
+  - u
+  - use kettle on tap
+  - d
+  - use kettle on stove
+  - d
+  - use key on chest
+  - take teabag
+  - u
+  - use teabag on mug
+  - use kettle on mug
+  - w
+  - { do: give mug to otto, see: "better person" }

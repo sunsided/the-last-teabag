@@ -1,0 +1,24 @@
+with: otto
+start: [meet]
+nodes:
+  meet:
+    say: '"Hm? Who is that? Speak up, I can only see weather."'
+    options:
+      - say: '"Have you the key to the tea chest?"'
+        go: key
+      - say: '"Where do you keep the water these days?"'
+        go: water
+      - say: '"Nothing, Otto."'
+        go: end
+  key:
+    say: '{specs.location == nowhere ? "Gave it to you, dear." | "Somewhere. Find my spectacles and I shall find my pockets."}'
+    options:
+      - say: '"And the water?"'
+        go: water
+      - say: '"Right."'
+        go: end
+  water:
+    say: '"Bathroom tap. Kitchen''s been dry since the Plumber Incident."'
+    options:
+      - say: '"Thank you."'
+        go: end

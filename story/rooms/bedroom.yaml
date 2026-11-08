@@ -1,0 +1,7 @@
+name: Bedroom
+position: [0, -1]
+description:
+  - "The bed is unmade. The floorboards complain."
+exits:
+  - { direction: up, to: attic }
+  - { direction: east, to: bathroom }

@@ -1,0 +1,5 @@
+name: stove
+location: { room: kitchen }
+listed: false
+description:
+  - "A gas stove older than Otto."

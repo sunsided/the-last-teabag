@@ -1,0 +1,6 @@
+name: mug
+location: { room: kitchen }
+portable: true
+props: { bag: false, tea: false }
+description:
+  - "{mug.tea ? A proper cup of tea. | {mug.bag ? A teabag waits at the bottom. | The only clean mug in the house.}}"

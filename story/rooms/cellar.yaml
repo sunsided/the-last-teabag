@@ -1,0 +1,6 @@
+name: Cellar
+position: [1, 1]
+description:
+  - "Coal dust and damp."
+exits:
+  - { direction: up, to: kitchen }

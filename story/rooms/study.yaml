@@ -1,0 +1,6 @@
+name: Study
+position: [0, 0]
+description:
+  - "Books, mostly about canals."
+exits:
+  - { direction: east, to: kitchen }

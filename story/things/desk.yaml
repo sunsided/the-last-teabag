@@ -1,0 +1,5 @@
+name: desk
+location: { room: study }
+listed: false
+description:
+  - "Canal timetables, all of them out of date."

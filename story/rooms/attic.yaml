@@ -1,0 +1,6 @@
+name: Attic
+position: [0, -2]
+description:
+  - "Dust, and an upright piano nobody tunes."
+exits:
+  - { direction: down, to: bedroom }

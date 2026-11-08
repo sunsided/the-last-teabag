@@ -1,0 +1,120 @@
+- id: return_specs
+  on: { verb: [give, specs, otto] }
+  instead: true
+  then:
+    - move: { specs: nowhere, chest_key: carried }
+    - say: [{ says: "My eyes! Bless you. Here, the key to the tea chest, I can't think why I had it.", by: otto }]
+- id: chest_locked
+  on: { check: [open, chest] }
+  when: not chest.unlocked and not carried(chest_key)
+  then:
+    - say: "Padlocked."
+    - stop
+- id: unlock_chest
+  on: { verb: [use, chest_key, chest] }
+  instead: true
+  then:
+    - move: { chest_key: nowhere }
+    - set: { chest.unlocked: true, chest.open: true }
+    - say: "The padlock gives up. One teabag looks back at you."
+- id: fill_kettle
+  on: { verb: [use, kettle, tap] }
+  instead: true
+  then:
+    - set: { kettle.full: true }
+    - say: "You fill the kettle."
+- id: try_sink
+  on: { verb: [use, kettle, sink] }
+  instead: true
+  then:
+    - say: "The sink coughs up one rusty drop."
+- id: boil_empty
+  on: { verb: [use, kettle, stove] }
+  when: not kettle.full
+  instead: true
+  then:
+    - say: "Boiling a spider is not breakfast."
+- id: boil
+  on: { verb: [use, kettle, stove] }
+  when: kettle.full
+  instead: true
+  then:
+    - set: { kettle.hot: true }
+    - say: "The kettle starts to sing."
+- id: bag_in_mug
+  on: { verb: [use, teabag, mug] }
+  instead: true
+  then:
+    - move: { teabag: nowhere }
+    - set: { mug.bag: true }
+    - say: "The teabag settles in the mug."
+- id: pour_early
+  on: { verb: [use, kettle, mug] }
+  when: not (kettle.hot and mug.bag)
+  instead: true
+  then:
+    - say: "Not yet. Tea has an order of service."
+- id: pour
+  on: { verb: [use, kettle, mug] }
+  when: kettle.hot and mug.bag
+  instead: true
+  then:
+    - set: { mug.tea: true, kettle.hot: false, kettle.full: false }
+    - say: "You pour. The house briefly makes sense."
+- id: give_tea
+  on: { verb: [give, mug, otto] }
+  when: mug.tea
+  instead: true
+  then:
+    - say: [{ says: "For me? The last one? You are a better person than your mother warned.", by: otto }]
+    - end: shared
+- id: give_mug_empty
+  on: { verb: [give, mug, otto] }
+  when: not mug.tea
+  instead: true
+  then:
+    - say: [{ says: "Empty mugs I have, dear.", by: otto }]
+- id: use_tap
+  on: { verb: [use, tap] }
+  when: carried(kettle)
+  instead: true
+  then:
+    - set: { kettle.full: true }
+    - say: "You fill the kettle."
+- id: use_tap_empty_handed
+  on: { verb: [use, tap] }
+  when: not carried(kettle)
+  instead: true
+  then:
+    - say: "You have nothing to catch the water in."
+- id: use_stove
+  on: { verb: [use, stove] }
+  when: present(kettle) and kettle.full
+  instead: true
+  then:
+    - set: { kettle.hot: true }
+    - say: "The kettle starts to sing."
+- id: use_stove_idle
+  on: { verb: [use, stove] }
+  when: not (present(kettle) and kettle.full)
+  instead: true
+  then:
+    - say: "No point lighting it without a full kettle."
+- id: use_sink
+  on: { verb: [use, sink] }
+  instead: true
+  then:
+    - say: "The sink coughs up one rusty drop."
+- id: use_piano
+  on: { verb: [use, piano] }
+  instead: true
+  then:
+    - say: "You play the one tune you know. It is short."
+- id: open_chest_with_key
+  on: { check: [open, chest] }
+  when: not chest.unlocked and carried(chest_key)
+  then:
+    - move: { chest_key: nowhere }
+    - set: { chest.unlocked: true, chest.open: true }
+    - say: "The padlock gives up. One teabag looks back at you."
+    - stop

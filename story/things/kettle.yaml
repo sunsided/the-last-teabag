@@ -1,0 +1,10 @@
+name: empty kettle
+aliases: [kettle]
+names:
+  - { text: empty kettle, aliases: [kettle] }
+  - { when: kettle.full, text: filled kettle, aliases: [kettle] }
+location: { room: kitchen }
+portable: true
+props: { full: false, hot: false }
+description:
+  - "{kettle.hot ? It ticks with heat. | {kettle.full ? Full of water. | Empty. A dead spider rattles in it.}}"

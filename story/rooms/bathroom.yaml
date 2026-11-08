@@ -1,0 +1,7 @@
+name: Bathroom
+position: [1, -1]
+description:
+  - "Cold tiles and the only working tap in the house."
+exits:
+  - { direction: west, to: bedroom }
+  - { direction: down, to: kitchen }

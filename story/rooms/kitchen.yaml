@@ -1,0 +1,8 @@
+name: Kitchen
+position: [1, 0]
+description:
+  - "The kitchen smells of toast from another decade."
+exits:
+  - { direction: up, to: bathroom }
+  - { direction: west, to: study }
+  - { direction: down, to: cellar }

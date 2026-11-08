@@ -1,0 +1,5 @@
+name: teabag
+location: { in: chest }
+portable: true
+description:
+  - "The last of its kind."

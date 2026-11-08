@@ -1,0 +1,5 @@
+name: bed
+location: { room: bedroom }
+listed: false
+description:
+  - "Still warm."

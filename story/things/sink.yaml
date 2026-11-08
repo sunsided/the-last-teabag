@@ -1,0 +1,5 @@
+name: kitchen sink
+location: { room: kitchen }
+listed: false
+description:
+  - "Dry. The plumber comes Thursday, they say."

@@ -1,0 +1,15 @@
+title: The Last Teabag
+author: lcp
+start: bedroom
+seed: 7
+intro:
+  - "Tuesday, eight o'clock. There is one teabag left in this house, and you intend to drink it. Uncle Otto has other plans at one."
+clock:
+  start: "08:00"
+  minutes_per_turn: 5
+  phases:
+    - { name: morning, from: "06:00" }
+    - { name: afternoon, from: "12:00" }
+vars:
+  - { id: otto_has_mug, type: bool, initial: false }
+  - { id: piano_playing, type: bool, initial: false }
