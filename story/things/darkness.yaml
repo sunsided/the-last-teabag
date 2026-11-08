@@ -1,0 +1,6 @@
+name: Darkness
+proper: true
+location: { room: cellar }
+listed: false
+description:
+  - "It is very dark."

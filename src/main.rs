@@ -203,6 +203,8 @@ impl App {
     }
 
     fn show(&mut self, text: String, who: Option<String>) {
+        // The cat has no lines, only noises.
+        let text = if who.as_deref() == Some("darkness") { format!("*{}*", text.trim_matches('"')) } else { text };
         match sound_of(&text) {
             Some(sound) => {
                 let text = format!("*{sound}*");
@@ -691,6 +693,7 @@ impl Game for App {
         if let Some(l) = self.lines.front() {
             let (pos, color) = match l.who.as_deref() {
                 Some("otto") => (self.otto.pos, Color::hex(0xe8c84a)),
+                Some("darkness") => ([167.0, 180.0], Color::hex(0xffb070)),
                 _ => (self.hero.pos, Color::WHITE),
             };
             let lines = wrap(l.text.trim_matches('"'), 30);
@@ -830,7 +833,7 @@ mod tests {
         for s in SPOTS {
             let width = s.sprite.iter().map(|r| r.len()).max().unwrap() as f32;
             for (room, x) in s.places {
-                assert!(x - house::stand_x(room, *x) >= width / 2.0 + 4.0, "{}", s.id);
+                assert!((x - house::stand_x(room, *x)).abs() >= width / 2.0 + 4.0, "{}", s.id);
             }
         }
     }
@@ -948,6 +951,27 @@ mod tests {
         assert!(down.arrive_x > down.leave_x);
         let up = &house::route("kitchen", "bathroom").unwrap()[0];
         assert!(up.arrive_x < up.leave_x);
+    }
+
+    #[test]
+    fn the_darkness_turns_out_to_be_a_cat() {
+        let (world, _) = load_story().unwrap();
+        for verb in ["examine", "take", "use", "open", "talk"] {
+            let mut s = Session::new(world.clone());
+            s.start();
+            for direction in ["east", "down", "down"] {
+                s.submit(Input::Command(Command::Go { direction: direction.into() }));
+            }
+            let step = s.submit(Input::Command(Command::verb(verb, vec!["darkness".into()])));
+            let blocks: Vec<&Block> = step.effects.iter().filter_map(|e| match e {
+                Effect::Text { block } => Some(block),
+                _ => None,
+            }).collect();
+            let at = |needle: &str| blocks.iter().position(|b| b.plain_text().contains(needle)).unwrap_or_else(|| panic!("{verb}: {needle}"));
+            assert!(at("deep, dark void") < at("...") && at("...") < at("Mittens") && at("Mittens") < at("meow"), "{verb}");
+            assert!(blocks[at("Mittens")].runs.iter().any(|r| r.speaker.as_deref() == Some("player")));
+            assert!(blocks[at("meow")].runs.iter().any(|r| r.speaker.as_deref() == Some("darkness")));
+        }
     }
 
     #[test]

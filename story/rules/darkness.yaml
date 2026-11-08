@@ -1,0 +1,13 @@
+# Whatever you do to the darkness, it comes to the same thing.
+- { id: stare_examine, on: { verb: [examine, darkness] }, instead: true, then: [{ emit: stare }] }
+- { id: stare_take, on: { verb: [take, darkness] }, instead: true, then: [{ emit: stare }] }
+- { id: stare_use, on: { verb: [use, darkness] }, instead: true, then: [{ emit: stare }] }
+- { id: stare_open, on: { verb: [open, darkness] }, instead: true, then: [{ emit: stare }] }
+- { id: stare_talk, on: { verb: [talk, darkness] }, instead: true, then: [{ emit: stare }] }
+- id: stare
+  on: { event: stare }
+  then:
+    - say: "You stare into a deep, dark void, and the void stares back at you."
+    - say: "..."
+    - say: [{ says: "Oh, it's Mittens!", by: player }]
+    - say: [{ says: "meow", by: darkness }]

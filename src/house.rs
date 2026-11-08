@@ -175,6 +175,7 @@ pub const SPOTS: &[Spot] = &[
     Spot { id: "mug", places: &[("kitchen", 262.0), ("study", 110.0)], sprite: MUG, default_verb: "take" },
     Spot { id: "piano", places: &[("attic", 240.0)], sprite: PIANO, default_verb: "use" },
     Spot { id: "chest", places: &[("cellar", 280.0)], sprite: CHEST, default_verb: "open" },
+    Spot { id: "darkness", places: &[("cellar", 167.0)], sprite: DARKNESS, default_verb: "examine" },
     Spot { id: "teabag", places: &[("cellar", 280.0)], sprite: TEABAG, default_verb: "take" },
 ];
 
@@ -186,8 +187,9 @@ pub fn stand_x(room_id: &str, x: f32) -> f32 {
         .flat_map(|s| s.sprite.iter().map(|r| r.len()))
         .max()
         .unwrap_or(0) as f32;
-    let stand = x - width / 2.0 - 6.0;
-    room(room_id).map_or(stand, |r| stand.max(r.x.0))
+    let left = x - width / 2.0 - 6.0;
+    // In a left corner there is no room on that side, so stand on the other.
+    if room(room_id).is_some_and(|r| left < r.x.0) { x + width / 2.0 + 6.0 } else { left }
 }
 
 /// Things that stand on furniture draw raised by this much.

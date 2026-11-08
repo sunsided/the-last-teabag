@@ -339,6 +339,30 @@ pub const OTTO_B: &[&str] = &[
     "  dd dd ", "  dddd  ", "   dd   ", "   dd   ", "   kk   ",
 ];
 
+pub const DARKNESS: &[&str] = &[
+    "k k k k k k k ",
+    " k k k k k k k",
+    "kkkkkkkkkkkkk ",
+    " kkkkkkkkkkkkk",
+    "kkkkkkkkkkkkkk",
+    "kkkkkkkkkkkkkk",
+    "kkkkkkkkkkkkk ",
+    "kkkkkkkkkkkkkk",
+    "kkkkkkkkkkkkkk",
+    "kkkkkkkkkkkkk ",
+    "kkkkkkkkkkkkkk",
+    "kkkkkkkkkkkk k",
+    "kkkkkkkkkkkkk ",
+    "kkkkkkkkkkkk k",
+    "kkkkkkkkkkkkk ",
+    "kkkkkkkkkkkk k",
+    "kkkkkkkkkkk k ",
+    "kkkkkkkkkkkk k",
+    "kkkkkkkkkkk k ",
+    "kkkkkkkkkk k k",
+    "kkkkkkkkkkk k ",
+    "kkkkkkkkkk k k",
+];
 pub const DOOR: &[&str] = &[
     "DDDDDDDD",
     "DBBBBBBD", "DBbbbbBD", "DBbBBbBD", "DBbBBbBD", "DBbBBbBD", "DBbBBbBD", "DBbbbbBD",
