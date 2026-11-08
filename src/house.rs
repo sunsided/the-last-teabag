@@ -109,6 +109,11 @@ pub fn room(id: &str) -> Option<&'static Room> {
     ROOMS.iter().find(|r| r.id == id)
 }
 
+/// The room someone standing at `pos` is in; `None` on stairs and in doorways.
+pub fn standing_in(pos: [f32; 2]) -> Option<&'static Room> {
+    ROOMS.iter().find(|r| (pos[1] - r.floor).abs() < 0.5 && pos[0] >= r.x.0 - 2.0 && pos[0] <= r.x.1 + 2.0)
+}
+
 pub fn room_at(x: f32, y: f32) -> Option<&'static Room> {
     ROOMS.iter().find(|r| x >= r.x.0 - 2.0 && x <= r.x.1 + 2.0 && y <= r.floor && y > r.floor - 38.0)
 }

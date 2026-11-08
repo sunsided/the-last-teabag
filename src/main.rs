@@ -77,6 +77,8 @@ struct App {
     hero: Actor,
     otto: Actor,
     otto_room: String,
+    /// The room Otto's sprite was last seen standing in; lags `otto_room` while he walks.
+    otto_seen: &'static str,
     plan: VecDeque<Do>,
     /// The action to run on reaching Otto, while going after him.
     chase: Option<(Id, Vec<Id>)>,
@@ -277,27 +279,31 @@ impl App {
         }
     }
 
-    /// Keep after Otto wherever he is going, and act once actually beside him.
+    /// Follow Otto to where he is right now, and act once beside him. The story moves
+    /// him to a room the moment he sets off, so go by his sprite, not by the story.
     fn intercept(&mut self) {
+        if let Some(r) = house::standing_in(self.otto.pos) {
+            self.otto_seen = r.id;
+        }
         let Some((verb, objects)) = self.chase.clone() else { return };
         let [hx, hy] = self.hero.pos;
         // Mid-stairs the only way is on.
         if self.hero.path.front().is_some_and(|t| (t[1] - hy).abs() > 0.5) {
             return;
         }
-        let [ox, oy] = self.otto.pos;
-        let target = self.otto_room.clone();
-        let Some(r) = house::room(&target) else { return };
-        // The story moves him first; until his sprite is in the room, aim where it will stop.
-        let arrived = (oy - r.floor).abs() < 0.5 && ox >= r.x.0 - 2.0 && ox <= r.x.1 + 2.0;
-        let aim = if arrived { ox } else { self.otto.path.back().map_or(ox, |p| p[0]) };
+        let [ox, _] = self.otto.pos;
+        let target = self.otto_seen;
+        let Some(r) = house::room(target) else { return };
+        let aim = ox.clamp(r.x.0, r.x.1);
         if self.hero_room() != target {
             if self.chase_goal != target || (self.plan.is_empty() && self.hero.path.is_empty()) {
-                self.chase_goal = target.clone();
-                self.plan_to(&target, aim, None);
+                self.chase_goal = target.to_string();
+                self.plan_to(target, aim, None);
             }
             return;
         }
+        // Only where the story agrees he is can the two of you actually talk.
+        let arrived = house::standing_in(self.otto.pos).is_some_and(|r| r.id == target) && self.otto_room == target;
         if arrived && (8.0..=16.0).contains(&(hx - ox).abs()) {
             self.chase = None;
             self.plan.clear();
@@ -525,6 +531,7 @@ impl App {
         self.hero = Actor { pos: [150.0, start.floor], ..Default::default() };
         self.otto = Actor { pos: [110.0, start.floor], ..Default::default() };
         self.otto_room = "bedroom".into();
+        self.otto_seen = "bedroom";
         self.plan.clear();
         self.chase = None;
     }
@@ -549,6 +556,7 @@ impl Game for App {
             hero: Actor::default(),
             otto: Actor::default(),
             otto_room: String::new(),
+            otto_seen: "bedroom",
             plan: VecDeque::new(),
             chase: None,
             chase_goal: String::new(),
@@ -972,6 +980,13 @@ mod tests {
             assert!(blocks[at("Mittens")].runs.iter().any(|r| r.speaker.as_deref() == Some("player")));
             assert!(blocks[at("meow")].runs.iter().any(|r| r.speaker.as_deref() == Some("darkness")));
         }
+    }
+
+    #[test]
+    fn people_on_stairs_and_in_doorways_are_in_no_room() {
+        assert_eq!(house::standing_in([150.0, 102.0]).map(|r| r.id), Some("bedroom"));
+        assert!(house::standing_in([150.0, 80.0]).is_none());
+        assert!(house::standing_in([201.0, 102.0]).is_none());
     }
 
     #[test]
