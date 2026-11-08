@@ -205,6 +205,7 @@ pub fn color(c: char) -> Option<u32> {
         'P' => 0xe890a0,
         'Y' => 0xa88020,
         'D' => 0x33291f,
+        'N' => 0x14183a,
         _ => return None,
     })
 }
@@ -362,6 +363,27 @@ pub const DARKNESS: &[&str] = &[
     "kkkkkkkkkk k k",
     "kkkkkkkkkkk k ",
     "kkkkkkkkkk k k",
+];
+/// The heroine of Cheesed! (https://github.com/sunsided/cheesed), small enough for a wall.
+pub const POSTER: &[&str] = &[
+    "YYYYYYYYYYYYYYY",
+    "YNNNNNNNNNNNNNY",
+    "YNNNNPPNPPNNNNY",
+    "YNNNNPPPPPNNNNY",
+    "YNNNyrrrrrrNNNY",
+    "YNNyygwkggNNNNY",
+    "YNNyoggggggwNNY",
+    "YNyyoRggggNNNNY",
+    "YNNyRRrggNNNNNY",
+    "YNNoRRrggyNNNNY",
+    "YNNRRrrgggNNNNY",
+    "YNNRRrbbbNNNNNY",
+    "YNRRrNbNbNNNNNY",
+    "YNRNRNbNbNNNNNY",
+    "YNNNNbbNbbNNNNY",
+    "YNNNNNNNNNNNNNY",
+    "YyyyyyyyyyyyyyY",
+    "YYYYYYYYYYYYYYY",
 ];
 pub const DOOR: &[&str] = &[
     "DDDDDDDD",

@@ -990,6 +990,16 @@ mod tests {
     }
 
     #[test]
+    fn the_poster_names_the_game() {
+        let (world, _) = load_story().unwrap();
+        let mut s = Session::new(world);
+        s.start();
+        s.submit(Input::Command(Command::Go { direction: "up".into() }));
+        let seen = s.submit(Input::Command(Command::verb("examine", vec!["poster".into()]))).plain_text();
+        assert!(seen.contains("It's Cheesed!, my favorite video game."), "{seen}");
+    }
+
+    #[test]
     fn route_crosses_the_house() {
         let dirs: Vec<_> = house::route("attic", "cellar").unwrap().iter().map(|l| l.dir).collect();
         assert_eq!(dirs, ["down", "east", "down", "down"]);

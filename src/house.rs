@@ -180,6 +180,7 @@ pub const SPOTS: &[Spot] = &[
     Spot { id: "mug", places: &[("kitchen", 262.0), ("study", 110.0)], sprite: MUG, default_verb: "take" },
     Spot { id: "piano", places: &[("attic", 240.0)], sprite: PIANO, default_verb: "use" },
     Spot { id: "chest", places: &[("cellar", 280.0)], sprite: CHEST, default_verb: "open" },
+    Spot { id: "poster", places: &[("attic", 255.0)], sprite: POSTER, default_verb: "examine" },
     Spot { id: "darkness", places: &[("cellar", 167.0)], sprite: DARKNESS, default_verb: "examine" },
     Spot { id: "teabag", places: &[("cellar", 280.0)], sprite: TEABAG, default_verb: "take" },
 ];
@@ -202,7 +203,7 @@ pub fn lift(id: &str) -> f32 {
     match id {
         "kettle" => 12.0,
         "mug" | "specs" => 11.0,
-        "teabag" => 12.0,
+        "teabag" | "poster" => 12.0,
         _ => 0.0,
     }
 }
