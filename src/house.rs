@@ -27,6 +27,23 @@ pub struct Portal {
     pub bx: f32,
 }
 
+impl Portal {
+    /// Where to stand at `a` and at `b`. Stairs descend left to right as drawn,
+    /// so the top end is left of the portal's x and the bottom end right of it.
+    fn ends(&self) -> (f32, f32) {
+        let (a, b) = (room(self.a).map_or(0.0, |r| r.floor), room(self.b).map_or(0.0, |r| r.floor));
+        if a == b {
+            (self.ax, self.bx)
+        } else if a < b {
+            (self.ax - STAIR_RUN, self.bx + STAIR_RUN)
+        } else {
+            (self.ax + STAIR_RUN, self.bx - STAIR_RUN)
+        }
+    }
+}
+
+const STAIR_RUN: f32 = 8.0;
+
 pub const PORTALS: &[Portal] = &[
     Portal { a: "bedroom", ax: 150.0, dir: "up", back: "down", b: "attic", bx: 150.0 },
     Portal { a: "bedroom", ax: 196.0, dir: "east", back: "west", b: "bathroom", bx: 206.0 },
@@ -39,7 +56,10 @@ pub const PORTALS: &[Portal] = &[
 pub struct Exit {
     pub portal: usize,
     pub room: &'static str,
+    /// Where to stand to use it.
     pub x: f32,
+    /// The middle of what is drawn, for clicking.
+    spot: f32,
     pub dir: &'static str,
     pub to: &'static str,
     pub arrive_x: f32,
@@ -63,7 +83,7 @@ impl Exit {
         };
         // The top end of a stair is a hatch in the floor; the rest is full height.
         let top = if here.floor < there.floor { here.floor - 14.0 } else { here.floor - 35.0 };
-        (x - self.x).abs() <= 8.0 && y >= top && y <= here.floor + 3.0
+        (x - self.spot).abs() <= 8.0 && y >= top && y <= here.floor + 3.0
     }
 }
 
@@ -72,9 +92,10 @@ pub fn exits() -> Vec<Exit> {
         .iter()
         .enumerate()
         .flat_map(|(portal, p)| {
+            let (a, b) = p.ends();
             [
-                Exit { portal, room: p.a, x: p.ax, dir: p.dir, to: p.b, arrive_x: p.bx },
-                Exit { portal, room: p.b, x: p.bx, dir: p.back, to: p.a, arrive_x: p.ax },
+                Exit { portal, room: p.a, x: a, spot: p.ax, dir: p.dir, to: p.b, arrive_x: b },
+                Exit { portal, room: p.b, x: b, spot: p.bx, dir: p.back, to: p.a, arrive_x: a },
             ]
         })
         .collect()
@@ -111,9 +132,9 @@ pub fn route(from: &str, to: &str) -> Option<Vec<Leg>> {
         }
         for p in PORTALS {
             let leg = if p.a == at {
-                Leg { leave_x: p.ax, dir: p.dir, to: p.b, arrive_x: p.bx }
+                Leg { leave_x: p.ends().0, dir: p.dir, to: p.b, arrive_x: p.ends().1 }
             } else if p.b == at {
-                Leg { leave_x: p.bx, dir: p.back, to: p.a, arrive_x: p.ax }
+                Leg { leave_x: p.ends().1, dir: p.back, to: p.a, arrive_x: p.ends().0 }
             } else {
                 continue;
             };

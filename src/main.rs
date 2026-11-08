@@ -942,6 +942,15 @@ mod tests {
     }
 
     #[test]
+    fn stairs_are_walked_along_their_slope() {
+        // Drawn descending left to right: going down moves right, going up moves left.
+        let down = &house::route("attic", "bedroom").unwrap()[0];
+        assert!(down.arrive_x > down.leave_x);
+        let up = &house::route("kitchen", "bathroom").unwrap()[0];
+        assert!(up.arrive_x < up.leave_x);
+    }
+
+    #[test]
     fn route_crosses_the_house() {
         let dirs: Vec<_> = house::route("attic", "cellar").unwrap().iter().map(|l| l.dir).collect();
         assert_eq!(dirs, ["down", "east", "down", "down"]);
