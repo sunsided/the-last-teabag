@@ -118,3 +118,9 @@
     - set: { chest.unlocked: true, chest.open: true }
     - say: "The padlock gives up. One teabag looks back at you."
     - stop
+- id: otto_on_piano
+  on: { verb: [use, piano] }
+  once: true
+  instead: true
+  then:
+    - say: [{ says: "Was that you, or has the cat learned the stairs?", by: otto }]

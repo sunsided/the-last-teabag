@@ -768,6 +768,21 @@ mod tests {
     }
 
     #[test]
+    fn otto_remarks_on_the_piano_only_once() {
+        let (world, _) = load_story().unwrap();
+        let mut s = Session::new(world);
+        s.start();
+        s.submit(Input::Command(Command::Go { direction: "up".into() }));
+        let mut play = || {
+            let step = s.submit(Input::Command(Command::verb("use", vec!["piano".into()])));
+            step.effects.iter().any(|e| matches!(e, Effect::Text { block }
+                if block.runs.iter().any(|r| r.speaker.as_deref() == Some("otto"))))
+        };
+        assert!(play());
+        assert!(!play());
+    }
+
+    #[test]
     fn route_crosses_the_house() {
         let dirs: Vec<_> = house::route("attic", "cellar").unwrap().iter().map(|l| l.dir).collect();
         assert_eq!(dirs, ["down", "east", "down", "down"]);
