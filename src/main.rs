@@ -6,7 +6,7 @@ mod house;
 use game_toolkit::prelude::*;
 use house::{PLAYER as HERO, OTTO as OTTO_ART, SPOTS};
 use loremaster_model::{Id, Location, Value};
-use loremaster_runtime::{BlockKind, Command, Effect, Input, Session, Status, Step, World};
+use loremaster_runtime::{Block, BlockKind, Command, Effect, Input, Session, Status, Step, World};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
@@ -156,7 +156,7 @@ impl App {
                         BlockKind::Prose if from("room:") => continue,
                         BlockKind::Prose | BlockKind::Response | BlockKind::Narration => {
                             // What happens elsewhere has no mouth; the rest the player remarks on.
-                            spoken.or_else(|| (!from("agenda:") && !from("story:")).then(|| "player".to_string()))
+                            spoken.or_else(|| (!is_ambient(&block)).then(|| "player".to_string()))
                         }
                         _ => continue,
                     };
@@ -667,6 +667,16 @@ impl Game for App {
     }
 }
 
+/// Text nobody on screen says. Loremaster has no such tag yet (sunsided/loremaster#178):
+/// agendas and the intro are ambient by origin, rules by the id prefix `ambient_`.
+fn is_ambient(block: &Block) -> bool {
+    block.runs.iter().any(|r| {
+        r.source.as_ref().is_some_and(|s| {
+            ["agenda:", "story:", "rule:ambient_"].iter().any(|p| s.owner.contains(p))
+        })
+    })
+}
+
 fn wrap(text: &str, width: usize) -> Vec<String> {
     let mut lines = vec![String::new()];
     for word in text.split_whitespace() {
@@ -734,6 +744,26 @@ mod tests {
             for (room, x) in s.places {
                 assert!(x - house::stand_x(room, *x) >= width / 2.0 + 4.0, "{}", s.id);
             }
+        }
+    }
+
+    #[test]
+    fn ambient_text_is_told_from_player_remarks() {
+        let (world, _) = load_story().unwrap();
+        let mut s = Session::new(world);
+        s.start();
+        let blocks = |step: Step| -> Vec<Block> {
+            step.effects.into_iter().filter_map(|e| match e {
+                Effect::Text { block } => Some(block),
+                _ => None,
+            }).collect()
+        };
+        s.submit(Input::Command(Command::Go { direction: "up".into() }));
+        let used = blocks(s.submit(Input::Command(Command::verb("use", vec!["piano".into()]))));
+        assert!(used.iter().any(|b| b.plain_text().contains("You play") && !is_ambient(b)));
+        let world: Vec<Block> = (0..60).flat_map(|_| blocks(s.submit(Input::Tick))).collect();
+        for needle in ["Plates clatter", "church clock"] {
+            assert!(world.iter().any(|b| b.plain_text().contains(needle) && is_ambient(b)), "{needle}");
         }
     }
 

@@ -1,0 +1,6 @@
+# Rule ids starting with ambient_ are narration: the host shows them at the
+# top of the screen, not as a remark by the player.
+- id: ambient_noon
+  on: { time: "12:00" }
+  then:
+    - say: "Somewhere a church clock strikes twelve, a little flat."
