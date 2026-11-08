@@ -1,10 +1,12 @@
 //! A point-and-click host for a loremaster story: the story decides what
 //! happens, this file decides where people stand while it does.
 
+mod art;
 mod house;
 
 use game_toolkit::prelude::*;
-use house::{PLAYER as HERO, OTTO as OTTO_ART, SPOTS};
+use art::{OTTO as OTTO_ART, PLAYER as HERO};
+use house::SPOTS;
 use loremaster_model::{Id, Location, Value};
 use loremaster_runtime::{Block, BlockKind, Command, Effect, Input, Session, Status, Step, World};
 use std::collections::{HashMap, VecDeque};
@@ -71,6 +73,7 @@ struct App {
     session: Session,
     names: HashMap<String, String>,
     art: HashMap<&'static str, (TextureId, u32, u32)>,
+    background: TextureId,
     hero: Actor,
     otto: Actor,
     otto_room: String,
@@ -102,7 +105,7 @@ fn texture(ctx: &mut Context, rows: &[&str]) -> (TextureId, u32, u32) {
     let mut rgba = Vec::with_capacity(w * rows.len() * 4);
     for r in rows {
         for x in 0..w {
-            match r.as_bytes().get(x).and_then(|&c| house::color(c as char)) {
+            match r.as_bytes().get(x).and_then(|&c| art::color(c as char)) {
                 Some(c) => rgba.extend([(c >> 16) as u8, (c >> 8) as u8, c as u8, 255]),
                 None => rgba.extend([0, 0, 0, 0]),
             }
@@ -540,6 +543,7 @@ impl Game for App {
             session: Session::new(world),
             names,
             art,
+            background: ctx.gfx.create_texture_rgba(art::CANVAS_W as u32, art::CANVAS_H as u32, &art::background(), None),
             hero: Actor::default(),
             otto: Actor::default(),
             otto_room: String::new(),
@@ -633,38 +637,24 @@ impl Game for App {
         let mut p = frame.painter(&mut ctx.gfx);
         let tod = ((minutes % 1440) as f32 - 480.0) / 300.0;
         p.clear(Color::rgb(0.45 + tod.min(1.0) * 0.1, 0.65, 0.85));
-        // Ground, with the cellar dug into it.
-        p.rect([0.0, 144.0], [W, 48.0], Color::hex(0x4a3524));
-        p.rect([0.0, 142.0], [W, 3.0], Color::hex(0x4f8a3f));
-        // A tree, so the house stands somewhere.
-        p.rect([24.0, 96.0], [8.0, 46.0], Color::hex(0x5a3a22));
-        p.circle([28.0, 86.0], 22.0, Color::hex(0x3f7a3f));
-        // Roof: a stepped silhouette over the attic, in tiles.
-        for i in 0..18 {
-            let (y, inset) = (22.0 + i as f32 * 1.0, 72.0 - i as f32 * 4.0);
-            p.rect([60.0 + inset, y], [280.0 - inset * 2.0, 1.0], Color::hex(0x8a3a2a));
+        p.sprite_ex(self.background, SpriteInstance::at([0.0, 0.0], [W, BAR_Y]), Layer(0), BlendMode::Alpha);
+        let t = ctx.time.elapsed.as_secs_f32();
+        for (pos, alpha) in art::smoke(t) {
+            p.rect_ex(pos, [3.0, 2.0], Color::WHITE.with_alpha(alpha), 1, BlendMode::Alpha);
         }
-        p.rect([60.0, 40.0], [280.0, 2.0], Color::hex(0x5a2a20));
-        for r in house::ROOMS {
-            let top = r.floor - 38.0;
-            p.rect([r.x.0 - 4.0, top], [r.x.1 - r.x.0 + 8.0, 38.0], Color::hex(r.wall));
-            p.rect([r.x.0 - 4.0, r.floor], [r.x.1 - r.x.0 + 8.0, 3.0], Color::hex(0x2a1e18));
-        }
-        // Stairs: every portal that changes floor.
+        // Doors and stairs light up under the mouse; the rest of them is in the background.
         let lit = |i: usize| hover.as_ref().is_some_and(|h| h.as_str().starts_with(&format!("exit:{i}:")));
-        for (i, g) in house::PORTALS.iter().enumerate() {
+        let glow = Color::hex(0xe8c84a);
+        for g in house::PORTALS.iter().enumerate().filter(|(i, _)| lit(*i)).map(|(_, g)| g) {
             let (Some(a), Some(b)) = (house::room(g.a), house::room(g.b)) else { continue };
-            if a.floor != b.floor {
+            if a.floor == b.floor {
+                p.rect_ex([g.ax + 1.0, a.floor - 24.0], [8.0, 24.0], glow, 1, BlendMode::Alpha);
+            } else {
                 let (top, bot) = (a.floor.min(b.floor), a.floor.max(b.floor));
-                let color = if lit(i) { Color::hex(0xe8c84a) } else { Color::hex(0xa8703a) };
                 for s in 0..8 {
                     let f = s as f32 / 8.0;
-                    p.rect([g.ax - 8.0 + f * 16.0, top + f * (bot - top)], [4.0, 2.0], color);
+                    p.rect_ex([g.ax - 8.0 + f * 16.0, top + f * (bot - top)], [5.0, 2.0], glow, 1, BlendMode::Alpha);
                 }
-            } else {
-                let color = if lit(i) { Color::hex(0xe8c84a) } else { Color::hex(0x5a3a22) };
-                p.rect([g.ax + 1.0, a.floor - 24.0], [8.0, 24.0], color);
-                p.rect([g.ax + 7.0, a.floor - 12.0], [1.0, 2.0], Color::hex(0xe8c84a));
             }
         }
         let draw = |p: &mut Painter, art: (TextureId, u32, u32), x: f32, y: f32, flip: bool, tint: Color, layer: i16| {
@@ -683,10 +673,9 @@ impl Game for App {
             draw(&mut p, self.art[s.id], x, r.floor - house::lift(s.id), false, tint, 1);
         }
         if flag(&self.session, "kettle.hot") && matches!(loc(&self.session, "kettle"), Some(Location::Room(_))) {
-            p.rect([292.0, 114.0], [1.0, 4.0], Color::WHITE);
+            p.rect_ex([292.0, 114.0], [1.0, 4.0], Color::WHITE, 1, BlendMode::Alpha);
         }
         if flag(&self.session, "piano_playing") && self.otto_room == "attic" && self.otto.path.is_empty() {
-            let t = ctx.time.elapsed.as_secs_f32();
             p.pixel_text([250.0, 26.0 + (t * 3.0).sin() * 3.0], "~", 1, Color::WHITE);
         }
         let frame_of = |a: &Actor| if a.path.is_empty() { 0 } else { (a.phase as usize) % 2 };
@@ -723,7 +712,7 @@ impl Game for App {
             let mut y = 2.0;
             for chunk in wrap(&l.text, 64) {
                 let tw = chunk.len() as f32 * 6.0;
-                p.rect([(W - tw) / 2.0 - 2.0, y - 1.0], [tw + 4.0, 10.0], Color::BLACK.with_alpha(0.7));
+                p.rect_ex([(W - tw) / 2.0 - 2.0, y - 1.0], [tw + 4.0, 10.0], Color::BLACK.with_alpha(0.7), 3, BlendMode::Alpha);
                 p.pixel_text_ex([(W - tw) / 2.0, y], &chunk, 1, Color::hex(0xc0e0ff), 3);
                 y += 10.0;
             }
@@ -754,7 +743,7 @@ impl Game for App {
             }
         }
         if let Some(t) = &self.ending {
-            p.rect([90.0, 90.0], [220.0, 50.0], Color::BLACK.with_alpha(0.85));
+            p.rect_ex([90.0, 90.0], [220.0, 50.0], Color::BLACK.with_alpha(0.85), 3, BlendMode::Alpha);
             p.pixel_text_ex([200.0 - t.len() as f32 * 6.0, 100.0], t, 2, Color::hex(0xe8c84a), 3);
             p.pixel_text_ex([140.0, 124.0], "click to start again", 1, Color::WHITE, 3);
         }

@@ -2,7 +2,7 @@
 
 A small point-and-click adventure in a cutaway house, built on [game-toolkit](https://github.com/sunsided/game-toolkit) and [loremaster](https://github.com/sunsided/loremaster) to find out whether the latter, a runtime for text adventures, copes with having a mouse attached.
 
-![The cutaway house: the player has just looked at the bed, Uncle Otto stands next to it, and the verb bar sits below.](docs/screenshot.png)
+![The cutaway house: the player fills the kettle in the bathroom while Uncle Otto goes *clank, clank* in the cellar, with the verb bar below.](docs/screenshot.png)
 
 The idea started with _Little Computer People_ (Activision, 1985) and its house with the front sawn off, tiny resident included: a perfectly good stage, I thought, for something that had so far only ever been text. None of the original's mechanics are here, and the house, the people, and the art are new; what stayed is the nod, and the question of what happens to an interactive fiction engine once you click on things SCUMM style and somebody has to walk over there first.
 

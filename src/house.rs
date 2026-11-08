@@ -1,19 +1,20 @@
 //! Where the story's rooms and things are on screen. The story knows none of this.
 
+use crate::art::*;
+
 pub struct Room {
     pub id: &'static str,
     pub x: (f32, f32),
     pub floor: f32,
-    pub wall: u32,
 }
 
 pub const ROOMS: &[Room] = &[
-    Room { id: "attic", x: (130.0, 300.0), floor: 62.0, wall: 0x5a4a6a },
-    Room { id: "bedroom", x: (66.0, 196.0), floor: 102.0, wall: 0x7a5a4a },
-    Room { id: "bathroom", x: (206.0, 334.0), floor: 102.0, wall: 0x3f7a7a },
-    Room { id: "study", x: (66.0, 196.0), floor: 142.0, wall: 0x4f6a3f },
-    Room { id: "kitchen", x: (206.0, 334.0), floor: 142.0, wall: 0x8a7a3f },
-    Room { id: "cellar", x: (160.0, 334.0), floor: 180.0, wall: 0x3a3430 },
+    Room { id: "attic", x: (130.0, 300.0), floor: 62.0 },
+    Room { id: "bedroom", x: (66.0, 196.0), floor: 102.0 },
+    Room { id: "bathroom", x: (206.0, 334.0), floor: 102.0 },
+    Room { id: "study", x: (66.0, 196.0), floor: 142.0 },
+    Room { id: "kitchen", x: (206.0, 334.0), floor: 142.0 },
+    Room { id: "cellar", x: (160.0, 334.0), floor: 180.0 },
 ];
 
 /// A way between two rooms: leave `a` at `ax` by `dir`, arrive in `b` at `bx`.
@@ -177,151 +178,3 @@ pub fn lift(id: &str) -> f32 {
         _ => 0.0,
     }
 }
-
-pub fn color(c: char) -> Option<u32> {
-    Some(match c {
-        'k' => 0x1a1420,
-        'w' => 0xece4d0,
-        'g' => 0x8a8a92,
-        'd' => 0x55505a,
-        'b' => 0x7a4a26,
-        'B' => 0xa8703a,
-        'r' => 0xb8402f,
-        'o' => 0xe08a2e,
-        'y' => 0xe8c84a,
-        't' => 0x3fa0a0,
-        'u' => 0x3a5aa8,
-        'p' => 0x8a4a9a,
-        's' => 0xe0b08a,
-        'n' => 0x4f8a3f,
-        _ => return None,
-    })
-}
-
-const BED: &[&str] = &[
-    "bb                  bb",
-    "bbwwww              bb",
-    "bbwwwwuuuuuuuuuuuuuubb",
-    "bbbbbbbbbbbbbbbbbbbbbb",
-    "b                    b",
-];
-const SPECS: &[&str] = &["kk k kk", "kyk kyk"];
-const TAP: &[&str] = &[
-    "   ggggg  ",
-    "   g   g  ",
-    "       g  ",
-    "wwwwwwwwww",
-    " wwwwwwww ",
-    "   wwww   ",
-    "    gg    ",
-    "    gg    ",
-    "    gg    ",
-    "    gg    ",
-    "   gggg   ",
-];
-const DESK: &[&str] = &[
-    "BBBBBBBBBBBBBBBBBBBB",
-    "bbbbbbbbbbbbbbbbbbbb",
-    "bb  bb        bb  bb",
-    "bb  bb        bb  bb",
-    "bb  bb        bb  bb",
-    "bb  bb        bb  bb",
-    "bb  bb        bb  bb",
-    "bb  bb        bb  bb",
-    "bb  bb        bb  bb",
-    "bb  bb        bb  bb",
-];
-const STOVE: &[&str] = &[
-    "dddddddddddddd",
-    "gggggggggggggg",
-    "gkkkkkkkkkkkkg",
-    "gkddddddddddkg",
-    "gkddddddddddkg",
-    "gkddddddddddkg",
-    "gkkkkkkkkkkkkg",
-    "gggggggggggggg",
-    "gggggggggggggg",
-    "gggggggggggggg",
-    "gg          gg",
-];
-const SINK: &[&str] = &[
-    "      gg      ",
-    "       g      ",
-    "wwwwwwwwwwwwww",
-    "wtwwwwwwwwwwtw",
-    "wtttttttttttww",
-    "wwwwwwwwwwwwww",
-    "wwwwwwwwwwwwww",
-    "wwwwwwwwwwwwww",
-    "wwwwwwwwwwwwww",
-    "wwwwwwwwwwwwww",
-    "ww          ww",
-];
-const KETTLE: &[&str] = &[
-    "  ggg  ",
-    " g   g ",
-    "gggggg ",
-    "ggggggg",
-    "gggggg ",
-];
-const MUG: &[&str] = &["wwww ", "rrrrw", "wwwww", "wwww "];
-const PIANO: &[&str] = &[
-    "bbbbbbbbbbbbbbbbbbbbbb",
-    "BBBBBBBBBBBBBBBBBBBBBB",
-    "bbbbbbbbbbbbbbbbbbbbbb",
-    "bbbbbbbbbbbbbbbbbbbbbb",
-    "wkwkwwkwkwkwwkwkwwkwkw",
-    "wwwwwwwwwwwwwwwwwwwwww",
-    "bbbbbbbbbbbbbbbbbbbbbb",
-    "bb                  bb",
-    "bb                  bb",
-    "bb                  bb",
-    "bb                  bb",
-    "bb       gg         bb",
-];
-const CHEST: &[&str] = &[
-    "BBBBBBBBBBBBBBBB",
-    "bbbbbbbbbbbbbbbb",
-    "bbbbbbbyybbbbbbb",
-    "BBBBBBByyBBBBBBB",
-    "bbbbbbbbbbbbbbbb",
-    "bbbbbbbbbbbbbbbb",
-    "BBBBBBBBBBBBBBBB",
-    "bbbbbbbbbbbbbbbb",
-    "bbbbbbbbbbbbbbbb",
-    "BBBBBBBBBBBBBBBB",
-    "bbbbbbbbbbbbbbbb",
-];
-const TEABAG: &[&str] = &[
-    "    y    ",
-    "    k    ",
-    "  wwwww  ",
-    " wwwwwww ",
-    " wwgwgww ",
-    " wwwwwww ",
-    "  wwwww  ",
-];
-
-pub const PLAYER: [&[&str]; 2] = [HERO_A, HERO_B];
-pub const OTTO: [&[&str]; 2] = [OTTO_A, OTTO_B];
-
-const HERO_A: &[&str] = &[
-    "  ooooo ", " ooooooo", " ossssoo", "  sksks ", "  sssss ", "   ss   ",
-    " nnnnnn ", "snnnnnns", "s nnnn s", "s nnnn s", "  nnnn  ", "  uuuu  ", "  uuuu  ",
-    "  uu uu ", "  uu uu ", "  uu uu ", " uu  uu ", " kk  kk ",
-];
-const HERO_B: &[&str] = &[
-    "  ooooo ", " ooooooo", " ossssoo", "  sksks ", "  sssss ", "   ss   ",
-    " nnnnnn ", "snnnnnns", "s nnnn s", "s nnnn s", "  nnnn  ", "  uuuu  ", "  uuuu  ",
-    "  uu uu ", "  uuuu  ", "   uu   ", "   uu   ", "   kk   ",
-];
-const OTTO_A: &[&str] = &[
-    "  wwwww ", " wsssssw", " wsksksw", "  sssss ", "  wwwww ", "   www  ",
-    " pppppp ", "sppppyps", "s pppp s", "s pppp s", "  pppp  ", "  dddd  ", "  dddd  ",
-    "  dd dd ", "  dd dd ", "  dd dd ", " dd  dd ", " kk  kk ",
-];
-const OTTO_B: &[&str] = &[
-    "  wwwww ", " wsssssw", " wsksksw", "  sssss ", "  wwwww ", "   www  ",
-    " pppppp ", "sppppyps", "s pppp s", "s pppp s", "  pppp  ", "  dddd  ", "  dddd  ",
-    "  dd dd ", "  dddd  ", "   dd   ", "   dd   ", "   kk   ",
-];
