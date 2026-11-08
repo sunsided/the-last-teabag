@@ -1,11 +1,12 @@
+# A line "sfx: ..." is a sound Otto makes: the host floats it beside him as *...*.
 actor: otto
 steps:
-  - { id: breakfast, at: "08:20", place: kitchen, then: [{ say: "{in(kitchen) ? Otto arrives and inspects the toast. | Plates clatter downstairs.}" }] }
-  - { id: take_mug, at: "08:50", place: kitchen, when: "mug.location == kitchen", then: [{ move: { mug: nowhere } }, { set: { otto_has_mug: true } }, { say: "{in(kitchen) ? Otto wanders off with the mug. | }" }] }
+  - { id: breakfast, at: "08:20", place: kitchen, then: [{ say: "sfx: clink, clatter" }, { say: "{in(kitchen) ? Otto arrives and inspects the toast. | Plates clatter downstairs.}" }] }
+  - { id: take_mug, at: "08:50", place: kitchen, when: "mug.location == kitchen", then: [{ move: { mug: nowhere } }, { set: { otto_has_mug: true } }, { say: "sfx: clink" }, { say: "{in(kitchen) ? Otto wanders off with the mug. | }" }] }
   - { id: study, at: "09:00", place: study }
-  - { id: set_mug, at: "09:10", place: study, when: otto_has_mug, then: [{ move: { mug: study } }, { set: { otto_has_mug: false } }, { say: "{in(study) ? Otto parks the mug on the desk. | }" }] }
-  - { id: piano, at: "09:40", place: attic, then: [{ set: { piano_playing: true } }, { say: "Schubert, or a staircase accident, drifts through the house." }] }
-  - { id: bath, at: "10:30", place: bathroom, then: [{ set: { piano_playing: false } }, { say: "{in(bathroom) ? Otto regards the tap fondly. | The pipes groan.}" }] }
-  - { id: cellar, at: "11:15", place: cellar, then: [{ say: "{in(cellar) ? Otto rattles the padlock, finds it fair. | Something bumps below.}" }] }
+  - { id: set_mug, at: "09:10", place: study, when: otto_has_mug, then: [{ move: { mug: study } }, { set: { otto_has_mug: false } }, { say: "sfx: clunk" }, { say: "{in(study) ? Otto parks the mug on the desk. | }" }] }
+  - { id: piano, at: "09:40", place: attic, then: [{ set: { piano_playing: true } }, { say: "sfx: plink, plonk, plink" }, { say: "Schubert, or a staircase accident, drifts through the house." }] }
+  - { id: bath, at: "10:30", place: bathroom, then: [{ set: { piano_playing: false } }, { say: "sfx: splash, gurgle" }, { say: "{in(bathroom) ? Otto regards the tap fondly. | The pipes groan.}" }] }
+  - { id: cellar, at: "11:15", place: cellar, then: [{ say: "sfx: clank, clank" }, { say: "{in(cellar) ? Otto rattles the padlock, finds it fair. | Something bumps below.}" }] }
   - { id: kitchen, at: "12:15", place: kitchen }
-  - { id: last_tea, at: "13:00", place: kitchen, then: [{ say: "Otto produces a teabag you have never seen and drinks it without you." }, { end: lost }], closes: [shared], reason: "The morning's deadline." }
+  - { id: last_tea, at: "13:00", place: kitchen, then: [{ say: "sfx: whistle" }, { say: "Otto produces a teabag you have never seen and drinks it without you." }, { end: lost }], closes: [shared], reason: "The morning's deadline." }

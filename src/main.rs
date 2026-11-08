@@ -30,8 +30,6 @@ enum Do {
     Walk(f32, f32),
     Go(String),
     Perform(Id, Vec<Id>),
-    /// Walk to a person who may have moved: plan again from here.
-    Chase(Id, Vec<Id>, Id),
 }
 
 #[derive(Default)]
@@ -77,10 +75,21 @@ struct App {
     otto: Actor,
     otto_room: String,
     plan: VecDeque<Do>,
+    /// The action to run on reaching Otto, while going after him.
+    chase: Option<(Id, Vec<Id>)>,
+    /// The room the current route after him leads to.
+    chase_goal: String,
     /// The verb the player picked; `None` means each thing's suggested action.
     verb: Option<usize>,
     first: Option<Id>,
+    /// What people say, one at a time; this is what clicks and the clock wait for.
     lines: VecDeque<Line>,
+    /// Narration at the top of the screen. It holds nothing up.
+    ambient: VecDeque<Line>,
+    /// Sounds floating beside Otto. They hold nothing up either.
+    sounds: VecDeque<Line>,
+    /// What Otto's agenda has done while his sprite is still on its way there.
+    held: VecDeque<String>,
     choices: Vec<String>,
     ending: Option<String>,
     tick: f32,
@@ -125,7 +134,7 @@ impl App {
 
     /// Somebody on screen is still saying something.
     fn speaking(&self) -> bool {
-        self.lines.iter().any(|l| l.who.is_some())
+        !self.lines.is_empty()
     }
 
     fn talking(&self) -> bool {
@@ -134,7 +143,12 @@ impl App {
 
     fn say(&mut self, text: String, who: Option<String>) {
         let left = 1.5 + text.len() as f32 * 0.05;
-        self.lines.push_back(Line { text, who, left, shown: 0.0 });
+        let line = Line { text, who, left, shown: 0.0 };
+        if line.who.is_some() {
+            self.lines.push_back(line);
+        } else {
+            self.ambient.push_back(line);
+        }
     }
 
     /// Takes in what the story said, and moves Otto's sprite to where the
@@ -162,8 +176,13 @@ impl App {
                     };
                     let text = block.plain_text();
                     // "comes in" notes describe what the sprite is already doing.
-                    if !text.trim().is_empty() && !text.starts_with("Uncle Otto") {
-                        self.say(text, who);
+                    if text.trim().is_empty() || text.starts_with("Uncle Otto") {
+                        continue;
+                    }
+                    if who.is_none() && from("agenda:") {
+                        self.held.push_back(text);
+                    } else {
+                        self.show(text, who);
                     }
                 }
                 Effect::Choices { choices, .. } => {
@@ -177,6 +196,26 @@ impl App {
             self.ending = Some(e.title);
         }
         self.sync_otto();
+        self.release_held();
+    }
+
+    fn show(&mut self, text: String, who: Option<String>) {
+        match sound_of(&text) {
+            Some(sound) => {
+                let text = format!("*{sound}*");
+                self.sounds.push_back(Line { text, who: None, left: 2.2, shown: 0.0 });
+            }
+            None => self.say(text, who),
+        }
+    }
+
+    /// The story runs Otto's step before his sprite gets there; show it once he has.
+    fn release_held(&mut self) {
+        if self.otto.path.is_empty() {
+            while let Some(text) = self.held.pop_front() {
+                self.show(text, None);
+            }
+        }
     }
 
     fn sync_otto(&mut self) {
@@ -229,18 +268,45 @@ impl App {
                     self.take(step);
                 }
                 Some(Do::Perform(v, o)) => self.perform(v, o),
-                Some(Do::Chase(v, o, who)) => {
-                    let Some(Location::Room(there)) = loc(&self.session, who.as_str()) else { return };
-                    if there.as_str() == self.hero_room() {
-                        self.hero.path.push_back([self.otto.pos[0] - 14.0, self.hero.pos[1]]);
-                        self.plan.push_front(Do::Perform(v, o));
-                    } else {
-                        let x = self.otto.pos[0];
-                        self.plan_to(there.as_str(), x, Some(Do::Chase(v, o, who.clone())));
-                    }
-                }
             }
         }
+    }
+
+    /// Keep after Otto wherever he is going, and act once actually beside him.
+    fn intercept(&mut self) {
+        let Some((verb, objects)) = self.chase.clone() else { return };
+        let [hx, hy] = self.hero.pos;
+        // Mid-stairs the only way is on.
+        if self.hero.path.front().is_some_and(|t| (t[1] - hy).abs() > 0.5) {
+            return;
+        }
+        let [ox, oy] = self.otto.pos;
+        let target = self.otto_room.clone();
+        let Some(r) = house::room(&target) else { return };
+        // The story moves him first; until his sprite is in the room, aim where it will stop.
+        let arrived = (oy - r.floor).abs() < 0.5 && ox >= r.x.0 - 2.0 && ox <= r.x.1 + 2.0;
+        let aim = if arrived { ox } else { self.otto.path.back().map_or(ox, |p| p[0]) };
+        if self.hero_room() != target {
+            if self.chase_goal != target || (self.plan.is_empty() && self.hero.path.is_empty()) {
+                self.chase_goal = target.clone();
+                self.plan_to(&target, aim, None);
+            }
+            return;
+        }
+        if arrived && (8.0..=16.0).contains(&(hx - ox).abs()) {
+            self.chase = None;
+            self.plan.clear();
+            self.hero.path.clear();
+            self.hero.flip = ox < hx;
+            self.perform(verb, objects);
+            return;
+        }
+        self.plan.clear();
+        // Beside him, on the side we came from unless a wall is in the way.
+        let left = (hx <= aim && aim - 14.0 >= r.x.0) || aim + 14.0 > r.x.1;
+        let stop = if left { aim - 14.0 } else { aim + 14.0 };
+        self.hero.path.clear();
+        self.hero.path.push_back([stop, r.floor]);
     }
 
     fn at(&self, x: f32, y: f32) -> Option<(Id, String, f32)> {
@@ -332,8 +398,8 @@ impl App {
             None => self.perform(verb, objects),
             Some(_) if person => {
                 self.plan.clear();
-                self.hero.path.clear();
-                self.plan.push_back(Do::Chase(verb, objects, id));
+                self.chase = Some((verb, objects));
+                self.chase_goal.clear();
             }
             Some((room, x)) => self.plan_to(&room, x, Some(Do::Perform(verb, objects))),
         }
@@ -357,6 +423,7 @@ impl App {
     }
 
     fn click_thing(&mut self, id: Id, room: Option<(String, f32)>) {
+        self.chase = None;
         let verb = self.verb.map_or_else(|| self.suggested(id.as_str(), room.is_none()), |i| VERBS[i].0);
         if let Some(exit) = house::exits().into_iter().find(|e| e.id() == id.as_str()) {
             return self.click_exit(exit, verb);
@@ -381,6 +448,9 @@ impl App {
             let step = self.session.restart();
             self.ending = None;
             self.lines.clear();
+            self.ambient.clear();
+            self.sounds.clear();
+            self.held.clear();
             self.reset_sprites();
             self.take(step);
             return;
@@ -389,7 +459,7 @@ impl App {
             return;
         }
         // Nobody acts or answers before the speaker has finished; a click only skips the line.
-        if self.speaking() || (self.talking() && !self.lines.is_empty()) {
+        if self.speaking() {
             if self.lines.front().is_some_and(|l| l.shown >= 0.4) {
                 self.lines.pop_front();
                 if !self.speaking() {
@@ -427,6 +497,7 @@ impl App {
         match self.at(x, y) {
             Some((id, room, ax)) => self.click_thing(id, Some((room, ax))),
             None => {
+                self.chase = None;
                 if self.first.is_none() && left {
                     if let Some(r) = house::room_at(x, y) {
                         self.plan_to(r.id, x.clamp(r.x.0, r.x.1), None);
@@ -450,6 +521,7 @@ impl App {
         self.otto = Actor { pos: [110.0, start.floor], ..Default::default() };
         self.otto_room = "bedroom".into();
         self.plan.clear();
+        self.chase = None;
     }
 }
 
@@ -472,9 +544,14 @@ impl Game for App {
             otto: Actor::default(),
             otto_room: String::new(),
             plan: VecDeque::new(),
+            chase: None,
+            chase_goal: String::new(),
             verb: None,
             first: None,
             lines: VecDeque::new(),
+            ambient: VecDeque::new(),
+            sounds: VecDeque::new(),
+            held: VecDeque::new(),
             choices: Vec::new(),
             ending: None,
             tick: 0.0,
@@ -503,16 +580,26 @@ impl Game for App {
                 self.click(ctx, left);
             }
         }
-        if self.hero.advance(dt) {
+        // Tailing him on the same route, keep a gap instead of walking inside him.
+        let (dx, dy) = (self.otto.pos[0] - self.hero.pos[0], self.otto.pos[1] - self.hero.pos[1]);
+        let tailing = self.chase.is_some() && !self.otto.path.is_empty() && dx * dx + dy * dy < 14.0 * 14.0;
+        if !tailing && self.hero.advance(dt) {
             self.run_plan();
         }
-        self.otto.advance(dt);
+        self.intercept();
+        // In a talk he stands and listens, wherever he was going.
+        if !self.talking() {
+            self.otto.advance(dt);
+        }
+        self.release_held();
         self.cooldown = (self.cooldown - dt).max(0.0);
-        if let Some(l) = self.lines.front_mut() {
-            l.shown += dt;
-            l.left -= dt;
-            if l.left <= 0.0 {
-                self.lines.pop_front();
+        for queue in [&mut self.lines, &mut self.ambient, &mut self.sounds] {
+            if let Some(l) = queue.front_mut() {
+                l.shown += dt;
+                l.left -= dt;
+                if l.left <= 0.0 {
+                    queue.pop_front();
+                }
             }
         }
         // Time passes only while nobody is mid-talk and Otto has caught up
@@ -580,58 +667,65 @@ impl Game for App {
                 p.rect([g.ax + 7.0, a.floor - 12.0], [1.0, 2.0], Color::hex(0xe8c84a));
             }
         }
-        let draw = |p: &mut Painter, art: (TextureId, u32, u32), x: f32, y: f32, flip: bool, tint: Color| {
+        let draw = |p: &mut Painter, art: (TextureId, u32, u32), x: f32, y: f32, flip: bool, tint: Color, layer: i16| {
             let (t, w, h) = art;
             let mut s = SpriteInstance::at([(x - w as f32 / 2.0).round(), (y - h as f32).round()], [w as f32, h as f32]);
             if flip {
                 s = s.flip_x();
             }
             s.color = tint.into();
-            p.sprite_ex(t, s, Layer(1), BlendMode::Alpha);
+            p.sprite_ex(t, s, Layer(layer), BlendMode::Alpha);
         };
         for s in SPOTS {
             let Some((room, x)) = self.place(s) else { continue };
             let r = house::room(&room).expect("spots name real rooms");
             let tint = if hover.as_ref().is_some_and(|h| h.as_str() == s.id) { Color::rgb(1.0, 1.0, 0.6) } else { Color::WHITE };
-            draw(&mut p, self.art[s.id], x, r.floor - house::lift(s.id), false, tint);
+            draw(&mut p, self.art[s.id], x, r.floor - house::lift(s.id), false, tint, 1);
         }
         if flag(&self.session, "kettle.hot") && matches!(loc(&self.session, "kettle"), Some(Location::Room(_))) {
             p.rect([292.0, 114.0], [1.0, 4.0], Color::WHITE);
         }
-        if flag(&self.session, "piano_playing") {
+        if flag(&self.session, "piano_playing") && self.otto_room == "attic" && self.otto.path.is_empty() {
             let t = ctx.time.elapsed.as_secs_f32();
             p.pixel_text([250.0, 26.0 + (t * 3.0).sin() * 3.0], "~", 1, Color::WHITE);
         }
         let frame_of = |a: &Actor| if a.path.is_empty() { 0 } else { (a.phase as usize) % 2 };
         let otto_tint = if hover.as_ref().is_some_and(|h| h.as_str() == "otto") { Color::rgb(1.0, 1.0, 0.6) } else { Color::WHITE };
-        draw(&mut p, self.art[["otto0", "otto1"][frame_of(&self.otto)]], self.otto.pos[0], self.otto.pos[1], self.otto.flip, otto_tint);
-        draw(&mut p, self.art[["hero0", "hero1"][frame_of(&self.hero)]], self.hero.pos[0], self.hero.pos[1], self.hero.flip, Color::WHITE);
+        draw(&mut p, self.art[["otto0", "otto1"][frame_of(&self.otto)]], self.otto.pos[0], self.otto.pos[1], self.otto.flip, otto_tint, 1);
+        draw(&mut p, self.art[["hero0", "hero1"][frame_of(&self.hero)]], self.hero.pos[0], self.hero.pos[1], self.hero.flip, Color::WHITE, 2);
+        let outlined = |p: &mut Painter, x: f32, y: f32, text: &str, color: Color| {
+            for (dx, dy) in [(-1.0, 0.0), (1.0, 0.0), (0.0, -1.0), (0.0, 1.0)] {
+                p.pixel_text_ex([x + dx, y + dy], text, 1, Color::BLACK, 3);
+            }
+            p.pixel_text_ex([x, y], text, 1, color, 4);
+        };
         if let Some(l) = self.lines.front() {
-            let head = match l.who.as_deref() {
-                Some("otto") => Some((self.otto.pos, Color::hex(0xe8c84a))),
-                Some(_) => Some((self.hero.pos, Color::WHITE)),
-                None => None,
+            let (pos, color) = match l.who.as_deref() {
+                Some("otto") => (self.otto.pos, Color::hex(0xe8c84a)),
+                _ => (self.hero.pos, Color::WHITE),
             };
-            if let Some((pos, color)) = head {
-                let lines = wrap(l.text.trim_matches('"'), 30);
-                let mut y = (pos[1] - 21.0 - lines.len() as f32 * 9.0).max(1.0);
-                for chunk in lines {
-                    let tw = chunk.len() as f32 * 6.0;
-                    let x = (pos[0] - tw / 2.0).clamp(2.0, W - tw - 2.0).round();
-                    for (dx, dy) in [(-1.0, 0.0), (1.0, 0.0), (0.0, -1.0), (0.0, 1.0)] {
-                        p.pixel_text_ex([x + dx, y + dy], &chunk, 1, Color::BLACK, 3);
-                    }
-                    p.pixel_text_ex([x, y], &chunk, 1, color, 4);
-                    y += 9.0;
-                }
-            } else {
-                let mut y = 2.0;
-                for chunk in wrap(&l.text, 64) {
-                    let tw = chunk.len() as f32 * 6.0;
-                    p.rect([(W - tw) / 2.0 - 2.0, y - 1.0], [tw + 4.0, 10.0], Color::BLACK.with_alpha(0.7));
-                    p.pixel_text_ex([(W - tw) / 2.0, y], &chunk, 1, Color::hex(0xc0e0ff), 3);
-                    y += 10.0;
-                }
+            let lines = wrap(l.text.trim_matches('"'), 30);
+            let mut y = (pos[1] - 21.0 - lines.len() as f32 * 9.0).max(1.0);
+            for chunk in lines {
+                let tw = chunk.len() as f32 * 6.0;
+                let x = (pos[0] - tw / 2.0).clamp(2.0, W - tw - 2.0).round();
+                outlined(&mut p, x, y, &chunk, color);
+                y += 9.0;
+            }
+        }
+        if let Some(l) = self.sounds.front() {
+            let tw = l.text.len() as f32 * 6.0;
+            let x = (self.otto.pos[0] + 8.0).clamp(2.0, W - tw - 2.0).round();
+            let y = (self.otto.pos[1] - 14.0 - l.shown * 5.0).round();
+            outlined(&mut p, x, y, &l.text, Color::hex(0xffb070));
+        }
+        if let Some(l) = self.ambient.front() {
+            let mut y = 2.0;
+            for chunk in wrap(&l.text, 64) {
+                let tw = chunk.len() as f32 * 6.0;
+                p.rect([(W - tw) / 2.0 - 2.0, y - 1.0], [tw + 4.0, 10.0], Color::BLACK.with_alpha(0.7));
+                p.pixel_text_ex([(W - tw) / 2.0, y], &chunk, 1, Color::hex(0xc0e0ff), 3);
+                y += 10.0;
             }
         }
         p.rect([0.0, BAR_Y], [W, H - BAR_Y], Color::hex(0x14101c));
@@ -665,6 +759,11 @@ impl Game for App {
             p.pixel_text_ex([140.0, 124.0], "click to start again", 1, Color::WHITE, 3);
         }
     }
+}
+
+/// A line the story marks as a sound: `sfx: clank, clank`.
+fn sound_of(text: &str) -> Option<&str> {
+    text.trim().strip_prefix("sfx:").map(str::trim)
 }
 
 /// Text nobody on screen says. Loremaster has no such tag yet (sunsided/loremaster#178):
@@ -765,6 +864,7 @@ mod tests {
         for needle in ["Plates clatter", "church clock"] {
             assert!(world.iter().any(|b| b.plain_text().contains(needle) && is_ambient(b)), "{needle}");
         }
+        assert!(world.iter().any(|b| sound_of(&b.plain_text()) == Some("clink, clatter")));
     }
 
     #[test]
@@ -780,6 +880,76 @@ mod tests {
         };
         assert!(play());
         assert!(!play());
+    }
+
+    #[test]
+    fn otto_brings_up_the_piano_in_one_talk() {
+        let (world, _) = load_story().unwrap();
+        let talk = Input::Command(Command::verb("talk", vec!["otto".into()]));
+        let mut unplayed = Session::new(world.clone());
+        unplayed.start();
+        assert!(!unplayed.submit(talk.clone()).plain_text().contains("sister"));
+        let mut s = Session::new(world);
+        s.start();
+        s.submit(Input::Command(Command::Go { direction: "up".into() }));
+        s.submit(Input::Command(Command::verb("use", vec!["piano".into()])));
+        s.submit(Input::Command(Command::Go { direction: "down".into() }));
+        assert!(s.submit(talk.clone()).plain_text().contains("sister"));
+        assert!(s.submit(Input::Choice(0)).plain_text().contains("Belgium"));
+        s.submit(Input::Choice(2));
+        assert!(!s.submit(talk).plain_text().contains("sister"));
+    }
+
+    #[test]
+    fn nobody_asks_how_he_heard_it_from_beside_the_piano() {
+        let (world, _) = load_story().unwrap();
+        let mut s = Session::new(world);
+        s.start();
+        s.submit(Input::Command(Command::Go { direction: "up".into() }));
+        for _ in 0..40 {
+            if s.snapshot().state().is_in_room("otto", "attic") {
+                break;
+            }
+            s.submit(Input::Tick);
+        }
+        assert!(s.snapshot().state().is_in_room("otto", "attic"));
+        s.submit(Input::Command(Command::verb("use", vec!["piano".into()])));
+        let step = s.submit(Input::Command(Command::verb("talk", vec!["otto".into()])));
+        assert!(step.plain_text().contains("sister"));
+        let answers: Vec<String> = step.effects.into_iter().flat_map(|e| match e {
+            Effect::Choices { choices, .. } => choices.into_iter().map(|c| c.text).collect(),
+            _ => Vec::new(),
+        }).collect();
+        assert_eq!(answers.len(), 1, "{answers:?}");
+        assert!(!answers[0].contains("from there"));
+    }
+
+    #[test]
+    fn otto_beside_the_piano_does_not_ask_who_played() {
+        let (world, _) = load_story().unwrap();
+        let mut s = Session::new(world);
+        s.start();
+        let wait_for_otto = |s: &mut Session, room: &str| {
+            for _ in 0..40 {
+                if s.snapshot().state().is_in_room("otto", room) {
+                    return;
+                }
+                s.submit(Input::Tick);
+            }
+            panic!("Otto never came to the {room}");
+        };
+        s.submit(Input::Command(Command::Go { direction: "up".into() }));
+        wait_for_otto(&mut s, "attic");
+        let played = s.submit(Input::Command(Command::verb("use", vec!["piano".into()]))).plain_text();
+        assert!(played.contains("standing right here") && !played.contains("cat"), "{played}");
+        // Downstairs later, he still heard it from beside you.
+        for direction in ["down", "east"] {
+            s.submit(Input::Command(Command::Go { direction: direction.into() }));
+        }
+        wait_for_otto(&mut s, "bathroom");
+        let step = s.submit(Input::Command(Command::verb("talk", vec!["otto".into()])));
+        assert!(step.plain_text().contains("sister"));
+        assert!(!format!("{:?}", step.effects).contains("from there"));
     }
 
     #[test]

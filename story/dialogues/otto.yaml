@@ -1,6 +1,25 @@
 with: otto
-start: [meet]
+start: [piano, meet]
 nodes:
+  piano:
+    when: played_piano and not discussed_piano
+    say: '"That tune of yours. My sister played it at her own wedding, and the marriage never recovered."'
+    set: { discussed_piano: true }
+    options:
+      - say: '"You could hear it from there?"'
+        when: not in(attic) and not played_beside_otto
+        go: heard
+      - say: '"It is the only one I know."'
+        go: heard
+  heard:
+    say: '"Dear child, they could hear it in Belgium."'
+    options:
+      - say: '"Have you the key to the tea chest?"'
+        go: key
+      - say: '"Where do you keep the water these days?"'
+        go: water
+      - say: '"Nothing, Otto."'
+        go: end
   meet:
     say: '"Hm? Who is that? Speak up, I can only see weather."'
     options:

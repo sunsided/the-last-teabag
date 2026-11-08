@@ -120,7 +120,15 @@
     - stop
 - id: otto_on_piano
   on: { verb: [use, piano] }
-  once: true
+  when: not played_piano and not (otto.location == attic)
   instead: true
   then:
+    - set: { played_piano: true }
     - say: [{ says: "Was that you, or has the cat learned the stairs?", by: otto }]
+- id: otto_beside_piano
+  on: { verb: [use, piano] }
+  when: not played_piano and otto.location == attic
+  instead: true
+  then:
+    - set: { played_piano: true, played_beside_otto: true }
+    - say: [{ says: "I am standing right here, you know. It did not help.", by: otto }]
