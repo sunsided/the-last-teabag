@@ -964,7 +964,7 @@ mod tests {
     #[test]
     fn the_darkness_turns_out_to_be_a_cat() {
         let (world, _) = load_story().unwrap();
-        for verb in ["examine", "take", "use", "open", "talk"] {
+        for verb in ["examine", "use", "open", "talk"] {
             let mut s = Session::new(world.clone());
             s.start();
             for direction in ["east", "down", "down"] {
@@ -980,6 +980,22 @@ mod tests {
             assert!(blocks[at("Mittens")].runs.iter().any(|r| r.speaker.as_deref() == Some("player")));
             assert!(blocks[at("meow")].runs.iter().any(|r| r.speaker.as_deref() == Some("darkness")));
         }
+    }
+
+    #[test]
+    fn taking_the_darkness_only_gets_a_remark() {
+        let (world, _) = load_story().unwrap();
+        let mut s = Session::new(world);
+        s.start();
+        for direction in ["east", "down", "down"] {
+            s.submit(Input::Command(Command::Go { direction: direction.into() }));
+        }
+        let step = s.submit(Input::Command(Command::verb("take", vec!["darkness".into()])));
+        let said = step.effects.iter().filter_map(|e| match e {
+            Effect::Text { block } => Some(block),
+            _ => None,
+        }).find(|b| b.plain_text().contains("It's almost fluid.")).expect("remark");
+        assert!(said.runs.iter().any(|r| r.speaker.as_deref() == Some("player")));
     }
 
     #[test]
