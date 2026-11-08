@@ -1,6 +1,6 @@
 # The Last Teabag
 
-A small point-and-click adventure in a cutaway house, built to find out whether [loremaster](https://github.com/sunsided/loremaster), a runtime for text adventures, copes with having a mouse attached.
+A small point-and-click adventure in a cutaway house, built on [game-toolkit](https://github.com/sunsided/game-toolkit) and [loremaster](https://github.com/sunsided/loremaster) to find out whether the latter, a runtime for text adventures, copes with having a mouse attached.
 
 ![The cutaway house: the player has just looked at the bed, Uncle Otto stands next to it, and the verb bar sits below.](docs/screenshot.png)
 
@@ -12,7 +12,7 @@ The plot is modest. There is one teabag left in the house, you intend to drink i
 
 Everything that happens lives in `story/`, as a plain loremaster project: rooms, things, rules, Otto's agenda, his dialogue, and the endings. You can play it in loremaster's terminal player too, although you'll miss the walking.
 
-The Rust host in `src/` knows where things are on screen and nothing else. Crossing a room submits a `go` command, an action fires only once the player has arrived, and a tick every six seconds moves the clock, which is what gets Otto going while you stand around thinking.
+The Rust host in `src/` sits on game-toolkit for the window, the drawing, and the mouse, and knows where things are on screen and nothing else. Crossing a room submits a `go` command, an action fires only once the player has arrived, and a tick every six seconds moves the clock, which is what gets Otto going while you stand around thinking.
 
 It turns out this needed no changes to loremaster at all. The one thing I'd like from it is a way to tell text caused by your click from text caused by the world, as the host currently guesses by where the text came from (and rule ids starting with `ambient_` count as narration, which is exactly as elegant as it sounds).
 
